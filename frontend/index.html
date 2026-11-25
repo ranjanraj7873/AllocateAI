@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AllocateAI — AI-based internship allocation engine</title>
+<link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+<!-- ============== AUTH SCREEN ============== -->
+<div id="auth-screen">
+  <div class="topbar">
+    <div>
+      <span class="eyebrow">AllocateAI · AI First Hackathon</span>
+      <h1>AllocateAI</h1>
+      <p class="tagline">AI that turns scarce interview slots into the right opportunity for every student.</p>
+    </div>
+  </div>
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div id="auth-error-slot"></div>
+
+      <div id="login-form">
+        <h2>Sign in</h2>
+        <p class="sub">Access your profile, job matches, and notifications.</p>
+        <div class="field"><label>Email</label><input type="email" id="login-email" /></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" /></div>
+        <button class="primary" id="login-submit">Sign in</button>
+        <div class="auth-toggle">No account yet? <button id="show-register">Register</button></div>
+      </div>
+
+      <div id="register-form" style="display:none;">
+        <h2>Create your account</h2>
+        <p class="sub">The very first account created on a fresh install becomes an admin automatically.</p>
+        <div class="field"><label>Full name</label><input type="text" id="register-name" /></div>
+        <div class="field"><label>Email</label><input type="email" id="register-email" /></div>
+        <div class="field"><label>Password (min. 8 characters)</label><input type="password" id="register-password" /></div>
+        <div class="field">
+          <label>I am registering as</label>
+          <select id="register-role">
+            <option value="applicant">A student / applicant</option>
+            <option value="company">A company / employer representative</option>
+          </select>
+        </div>
+        <div class="field" id="register-company-name-field" style="display:none;">
+          <label>Company name</label>
+          <input type="text" id="register-company-name" placeholder="e.g. Bharat Textiles Ltd" />
+          <p class="category-note">This must match the company name your postings and interviews will be listed under — choose it carefully, it can't be changed later in this demo.</p>
+        </div>
+        <button class="primary" id="register-submit">Create account</button>
+        <div class="auth-toggle">Already registered? <button id="show-login">Sign in</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== MAIN APP ============== -->
+<div id="app-screen" style="display:none;">
+  <div class="topbar">
+    <div>
+      <span class="eyebrow">AllocateAI · AI First Hackathon</span>
+      <h1>AllocateAI</h1>
+    </div>
+    <nav class="nav-tabs">
+      <button data-tab="profile" class="active" id="profile-tab-btn">My profile</button>
+      <button data-tab="jobboard">Job board</button>
+      <button data-tab="notifications" id="notifications-tab-btn">Notifications<span id="unread-badge" class="badge-count" style="display:none;"></span></button>
+      <button data-tab="allocation" id="allocation-tab-btn" style="display:none;">Allocation console</button>
+      <button data-tab="company" id="company-tab-btn" style="display:none;">Company console</button>
+    </nav>
+    <div class="user-menu">
+      <span id="user-name-display"></span>
+      <button id="logout-btn">Log out</button>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ---------- PROFILE TAB ---------- -->
+    <section class="tab-panel active" id="tab-profile">
+      <h2>Resume &amp; profile</h2>
+      <p class="section-note">Upload your resume to build your profile. Nothing is auto-generated — this is you.</p>
+
+      <div class="upload-box">
+        <p><strong>Upload your resume</strong> — PDF, DOCX, or TXT (max 8MB)</p>
+        <p id="parser-mode-note" style="font-size:11.5px;"></p>
+        <input type="file" id="resume-file" accept=".pdf,.docx,.txt,.md" />
+        <div><button class="primary" id="upload-resume-btn" style="margin-top:12px;">Upload &amp; parse</button></div>
+        <p id="upload-status" class="status-line" role="status" aria-live="polite"></p>
+      </div>
+
+      <div id="profile-panel" style="display:none; margin-top:24px;">
+        <div class="panel" style="padding:20px;">
+          <div class="profile-grid">
+            <div class="field"><label>Name (from resume)</label><input type="text" id="profile-name" disabled /></div>
+            <div class="field"><label>Email (from resume)</label><input type="text" id="profile-email" disabled /></div>
+            <div class="field">
+              <label>Priority / eligibility category (self-declared)</label>
+              <select id="profile-category">
+                <option value="GENERAL">GENERAL</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+                <option value="EWS">EWS</option>
+                <option value="PWD">PWD</option>
+              </select>
+              <p class="category-note">This is never guessed from your resume — you must confirm it yourself, since it's a certified status.</p>
+            </div>
+            <div class="field"><label>CGPA (0–10)</label><input type="number" id="profile-cgpa" min="0" max="10" step="0.01" /></div>
+            <div class="field"><label>Home state</label><input type="text" id="profile-state" /></div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label>Preferred locations (comma-separated cities)</label>
+              <input type="text" id="profile-locations" placeholder="e.g. Bengaluru, Pune" />
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:6px;">
+            <label>Skills (edit if the parser missed or misread anything)</label>
+            <div class="skill-tags" id="profile-skill-tags"></div>
+            <div class="skill-add-row">
+              <input type="text" id="new-skill-input" placeholder="Add a skill…" />
+              <button id="add-skill-btn">Add</button>
+            </div>
+          </div>
+
+          <button class="primary" id="save-profile-btn" style="margin-top:14px;">Save profile</button>
+          <span id="save-status" class="status-line" style="margin-left:10px;"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- JOB BOARD TAB ---------- -->
+    <section class="tab-panel" id="tab-jobboard">
+      <h2>Job board</h2>
+      <p class="section-note">Scheme internships (reservation-quota, part of the batch allocation round) and open-market postings aggregated from real company job APIs.</p>
+
+      <div id="admin-ingest-panel" style="display:none;" class="admin-panel">
+        <h3>Add or ingest postings (admin)</h3>
+        <div class="admin-subforms">
+          <div class="subform">
+            <h4>Add a scheme internship</h4>
+            <div class="field"><input type="text" id="manual-title" placeholder="Title" /></div>
+            <div class="field"><input type="text" id="manual-company" placeholder="Company" /></div>
+            <div class="field"><input type="text" id="manual-skills" placeholder="Required skills, comma-separated" /></div>
+            <div class="field"><input type="text" id="manual-location" placeholder="Location" /></div>
+            <div class="field"><input type="number" id="manual-capacity" placeholder="Total capacity" value="5" min="1" /></div>
+            <button id="manual-submit-btn">Add internship</button>
+            <div id="manual-result" class="result-note"></div>
+          </div>
+
+          <div class="subform">
+            <h4>Ingest from Greenhouse or Lever</h4>
+            <div class="field">
+              <select id="ingest-source">
+                <option value="greenhouse">Greenhouse (board token)</option>
+                <option value="lever">Lever (company slug)</option>
+              </select>
+            </div>
+            <div class="field"><input type="text" id="ingest-identifier" placeholder="e.g. stripe" /></div>
+            <button id="ingest-submit-btn">Fetch postings</button>
+            <div id="ingest-result" class="result-note"></div>
+          </div>
+
+          <div class="subform">
+            <h4>Paste a posting from anywhere else</h4>
+            <div class="field"><input type="text" id="paste-company" placeholder="Company" /></div>
+            <div class="field"><input type="text" id="paste-location" placeholder="Location" /></div>
+            <div class="field"><textarea id="paste-text" placeholder="Paste the full job description text…"></textarea></div>
+            <button id="paste-submit-btn">Parse &amp; add</button>
+            <div id="paste-result" class="result-note"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="job-toolbar">
+        <select id="job-filter-track">
+          <option value="ALL">All postings</option>
+          <option value="SCHEME">Allocation-pipeline postings (scheme + company)</option>
+          <option value="OPEN">Open-market only</option>
+        </select>
+        <input type="text" id="job-filter-search" placeholder="Search title or company…" />
+        <button id="refresh-jobs-btn">Refresh</button>
+      </div>
+
+      <div class="job-grid" id="job-grid"></div>
+    </section>
+
+    <!-- ---------- NOTIFICATIONS TAB ---------- -->
+    <section class="tab-panel" id="tab-notifications">
+      <h2>Notifications</h2>
+      <p class="section-note">Automatic alerts whenever a posting matches your uploaded resume, in either direction — new postings checked against you, and your resume checked against everything already posted.</p>
+      <div class="panel">
+        <div class="notif-list" id="notif-list"></div>
+      </div>
+    </section>
+
+    <!-- ---------- ALLOCATION CONSOLE TAB (admin only) ---------- -->
+    <section class="tab-panel" id="tab-allocation">
+      <h2>Allocation console</h2>
+      <p class="section-note">Four-stage pipeline: score every pair, provisionally match to find contested seats, interview only the pairs where an interview could change the outcome, then run the final stable match.</p>
+
+      <div class="toolbar">
+        <button id="seed-btn">Add demo scheme internships</button>
+        <button id="allocate-btn">Quick allocate (skip interview stage)</button>
+        <button id="reset-demo-btn" class="danger">Reset demo data</button>
+        <span id="alloc-status-line" class="status-line" role="status" aria-live="polite"></span>
+      </div>
+
+      <div class="panel pipeline-track" id="pipeline-track">
+        <div class="pipeline-node" data-stage="collect"><span class="node-num">1</span><span class="node-label">Data collection</span></div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node" data-stage="score"><span class="node-num">2</span><span class="node-label">AI scoring</span></div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node" data-stage="interview"><span class="node-num">3</span><span class="node-label">Interview selection</span></div>
+        <div class="pipeline-connector"></div>
+        <div class="pipeline-node" data-stage="finalize"><span class="node-num">4</span><span class="node-label">Final match</span></div>
+      </div>
+
+      <div class="panel pipeline-panel">
+        <h3>Interview pipeline</h3>
+        <p class="section-note">
+          Stage 1–2a: score every (applicant, internship) pair, then run a provisional match.
+          Stage 3: flag the few pairs near a capacity cutoff where the AI isn't confident — those are the interviews worth holding.
+          Conduct them, record outcomes, then finalize the real match.
+        </p>
+        <div class="pipeline-steps">
+          <div class="pipeline-step">
+            <span class="step-num">1</span>
+            <div>
+              <label for="max-interviews-input">Max interviews to select</label>
+              <input type="number" id="max-interviews-input" value="20" min="1" max="200" style="width:80px;" />
+              <button class="primary" id="prepare-cycle-btn">Prepare cycle</button>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">2</span>
+            <div>
+              <span id="cycle-status-line" class="status-line">No cycle prepared yet.</span>
+            </div>
+          </div>
+          <div class="pipeline-step">
+            <span class="step-num">3</span>
+            <div>
+              <button class="primary" id="finalize-cycle-btn" disabled>Finalize (run final match)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="company-view-panel">
+        <h3>View as company / employer</h3>
+        <p class="section-note">Filter the interview list and final allocations down to a single company — a stand-in for a real employer-facing view.</p>
+        <input type="text" id="company-filter-input" placeholder="Filter by company name (leave blank to see everything)…" />
+      </div>
+
+      <div id="interview-body"></div>
+
+      <div id="alloc-body">
+        <div class="empty-state">
+          <h3>No allocation run yet</h3>
+          <p>Prepare a cycle above (recommended), or use "Quick allocate" to skip the interview stage entirely.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab-panel" id="tab-company">
+      <h2>Company console</h2>
+      <p class="section-note" id="company-name-banner"></p>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Post an opening</h3>
+        <p class="section-note">Posted under your company name, scored against every registered applicant, and eligible for the same AI interview-selection and final-match pipeline as scheme internships.</p>
+        <div class="field"><label>Title</label><input type="text" id="company-post-title" placeholder="e.g. Frontend Engineering Intern" /></div>
+        <div class="field"><label>Required skills (comma separated)</label><input type="text" id="company-post-skills" placeholder="React, JavaScript, CSS" /></div>
+        <div class="field"><label>Location</label><input type="text" id="company-post-location" placeholder="e.g. Bengaluru" /></div>
+        <div class="field"><label>Total seats</label><input type="number" id="company-post-capacity" value="1" min="1" style="max-width:120px;" /></div>
+        <button class="primary" id="company-post-btn">Post opening</button>
+        <p id="company-post-result" class="status-line" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Your postings</h3>
+        <button id="company-refresh-btn" style="margin-bottom:10px;">Refresh</button>
+        <div id="company-internships-body"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom:20px;">
+        <h3>Interviews worth holding (for your postings)</h3>
+        <p class="section-note">These are the pairs the AI flagged as contested and low-confidence for your openings specifically — the same selection the placement team sees, filtered to just you.</p>
+        <div id="company-interviews-body"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Your final allocation results</h3>
+        <p class="section-note">Populated once the placement team finalizes an allocation cycle.</p>
+        <div id="company-allocations-body"></div>
+      </div>
+    </section>
+
+    <p class="footnote">
+      Reservation-category quotas on demo scheme internships use illustrative percentages —
+      replace with the scheme's actual policy circular before any real use. Stability is verified
+      after every allocation run; a non-empty "stability_violations" list would indicate a bug, not
+      a policy trade-off. Open-market postings are aggregated via Greenhouse and Lever's public
+      job-board APIs, or added manually — there is no generic "scrape any website" capability.
+    </p>
+
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

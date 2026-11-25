@@ -1,0 +1,35 @@
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and API keys
+.env
+.env.*
+!.env.example
+
+# IDE settings
+.idea/
+.vscode/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploaded files and logs
+uploads/
+*.log
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Operating system
+.DS_Store
+Thumbs.db
